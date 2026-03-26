@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-IMDB Movie Reviews Sentiment Analysis Dataset İndirme
-GPU: RTX 5060 8GB için optimize edilmiş
+IMDB Movie Reviews Sentiment Analysis Dataset Downloader
+Optimized for local training environment
 """
 
 import os
@@ -12,72 +12,72 @@ from pathlib import Path
 from datasets import load_dataset
 
 def download_imdb_dataset():
-    """IMDB movie reviews datasetini indir"""
+    """Download the IMDB movie reviews dataset"""
     
-    # Veri klasörünü oluştur
+    # Create data directory
     data_dir = Path("data")
     data_dir.mkdir(exist_ok=True)
     
-    print("🔄 IMDB Movie Reviews dataset indiriliyor...")
+    print("🔄 Downloading IMDB Movie Reviews dataset...")
     
     try:
-        # Kaggle'dan IMDB dataset indir
+        # Attempt download from Kaggle
         kaggle.api.dataset_download_files(
             'lakshmi25npathi/imdb-dataset-of-50k-movie-reviews',
             path='./data',
             unzip=True
         )
-        print("✅ Kaggle'dan IMDB dataset indirildi!")
+        print("✅ IMDB dataset successfully downloaded from Kaggle!")
         
-        # CSV dosyasını oku
+        # Load the CSV file
         df = pd.read_csv('./data/IMDB Dataset.csv')
         
     except Exception as e:
-        print(f"⚠️  Kaggle'dan indirme başarısız: {e}")
-        print("🔄 Hugging Face'den IMDB dataset indiriliyor...")
+        print(f"⚠️ Kaggle download failed: {e}")
+        print("🔄 Attempting fallback: Downloading IMDB dataset from Hugging Face...")
         
-        # Alternatif: Hugging Face datasets
+        # Fallback: Use Hugging Face datasets
         dataset = load_dataset("imdb")
         
-        # Train ve test setlerini DataFrame'e çevir
+        # Convert Train and Test sets to DataFrame
         train_df = pd.DataFrame(dataset['train'])
         test_df = pd.DataFrame(dataset['test'])
         
-        # Birleştir
+        # Concatenate and reformat
         df = pd.concat([train_df, test_df], ignore_index=True)
         df.columns = ['review', 'sentiment']
         df['sentiment'] = df['sentiment'].map({0: 'negative', 1: 'positive'})
         
-        # CSV olarak kaydet
+        # Save as local CSV
         df.to_csv('./data/IMDB Dataset.csv', index=False)
-        print("✅ Hugging Face'den IMDB dataset indirildi!")
+        print("✅ IMDB dataset successfully downloaded from Hugging Face!")
     
     print(f"📊 Total samples: {len(df)}")
     print(f"📊 Positive reviews: {len(df[df['sentiment'] == 'positive'])}")
     print(f"📊 Negative reviews: {len(df[df['sentiment'] == 'negative'])}")
     
-    # Örnek verileri göster
-    print("\n📝 Örnek veriler:")
+    # Display preview
+    print("\n📝 Data Preview:")
     print(df.head())
     
     return df
 
 def download_additional_datasets():
-    """Ek sentiment analysis datasetleri indir"""
+    """Download supplemental sentiment analysis datasets for research"""
     
-    print("\n🔄 Ek sentiment analysis datasetleri indiriliyor...")
+    print("\n🔄 Downloading additional sentiment analysis datasets...")
     
     try:
-        # Twitter Sentiment Analysis
+        # Twitter Sentiment Analysis (Sentiment140)
         kaggle.api.dataset_download_files(
             'kazanova/sentiment140',
             path='./data',
             unzip=True
         )
-        print("✅ Twitter Sentiment140 dataset indirildi!")
+        print("✅ Twitter Sentiment140 dataset downloaded!")
         
     except Exception as e:
-        print(f"⚠️  Twitter dataset indirme başarısız: {e}")
+        print(f"⚠️ Twitter dataset download failed: {e}")
     
     try:
         # Amazon Product Reviews
@@ -86,36 +86,36 @@ def download_additional_datasets():
             path='./data',
             unzip=True
         )
-        print("✅ Amazon Reviews dataset indirildi!")
+        print("✅ Amazon Reviews dataset downloaded!")
         
     except Exception as e:
-        print(f"⚠️  Amazon dataset indirme başarısız: {e}")
+        print(f"⚠️ Amazon dataset download failed: {e}")
 
 def check_gpu():
-    """GPU durumunu kontrol et"""
+    """Verify GPU availability for accelerated training"""
     if torch.cuda.is_available():
         gpu_name = torch.cuda.get_device_name(0)
         gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1024**3
-        print(f"🚀 GPU: {gpu_name}")
-        print(f"💾 GPU Memory: {gpu_memory:.1f} GB")
+        print(f"🚀 Detected GPU: {gpu_name}")
+        print(f"💾 Available VRAM: {gpu_memory:.1f} GB")
         return True
     else:
-        print("⚠️  GPU bulunamadı, CPU kullanılacak")
+        print("⚠️ GPU not detected; the system will default to CPU.")
         return False
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🎯 NLP Sentiment Analysis Projesi")
+    print("🎯 Neural Sentiment Analysis Project")
     print("=" * 60)
     
-    # GPU kontrolü
+    # Check GPU status
     gpu_available = check_gpu()
     
-    # Ana dataset indir
+    # Download primary dataset
     df = download_imdb_dataset()
     
-    # Ek datasetler indir
-    download_additional_datasets()
+    # Download secondary datasets (optional)
+    # download_additional_datasets()
     
-    print("\n🎉 Hazırlık tamamlandı!")
-    print("▶️  Şimdi 'python train.py' komutunu çalıştırabilirsiniz")
+    print("\n🎉 Preparation Complete!")
+    print("▶️ You can now run 'python train_simple.py' to begin training.")
