@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-BERT Sentiment Analysis Eğitim Scripti
-RTX 5060 8GB için optimize edilmiş
+🎯 BERT Sentiment Analysis Training Script
+Optimized for RTX 5060 8GB - High Performance Transformer Training
 """
 
 import torch
@@ -35,7 +35,7 @@ class SentimentDataset(Dataset):
         review = str(self.reviews[idx])
         sentiment = self.sentiments[idx]
         
-        # Tokenize
+        # Tokenize and encode the text
         encoding = self.tokenizer(
             review,
             truncation=True,
@@ -56,8 +56,8 @@ class BERTSentimentClassifier(nn.Module):
         try:
             self.bert = AutoModel.from_pretrained(model_name, local_files_only=False)
         except:
-            # Eğer model indirilemezse, basit bir alternatif kullan
-            print(f"⚠️ {model_name} indirilemedi, yerel model kullanılıyor...")
+            # Fallback if internet download fails
+            print(f"⚠️ {model_name} download failed, attempting to use local model...")
             from transformers import DistilBertModel, DistilBertConfig
             config = DistilBertConfig()
             self.bert = DistilBertModel(config)
@@ -65,11 +65,11 @@ class BERTSentimentClassifier(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.classifier = nn.Linear(self.bert.config.hidden_size, num_classes)
         
-        # Freeze some BERT layers to save memory
+        # Memory Optimization: Freeze the base BERT embeddings
         for param in self.bert.embeddings.parameters():
             param.requires_grad = False
         
-        # Only train last 2 layers
+        # Fine-tuning: Only train the final 2 layers of the encoder
         for layer in self.bert.encoder.layer[:-2]:
             for param in layer.parameters():
                 param.requires_grad = False
@@ -80,7 +80,7 @@ class BERTSentimentClassifier(nn.Module):
             attention_mask=attention_mask
         )
         
-        # Use [CLS] token representation
+        # Standard BERT practice: Use the [CLS] token (index 0) representation
         pooled_output = outputs.last_hidden_state[:, 0]
         output = self.dropout(pooled_output)
         output = self.classifier(output)
@@ -88,29 +88,28 @@ class BERTSentimentClassifier(nn.Module):
         return output
 
 def load_and_prepare_data():
-    """Veriyi yükle ve hazırla"""
+    """Load and preprocess the dataset"""
+    print("📊 Loading IMDB dataset...")
     
-    print("📊 Veri yükleniyor...")
-    
-    # IMDB dataset yükle
+    # Load raw CSV
     df = pd.read_csv('./data/IMDB Dataset.csv')
     
-    # Sentiment'ları sayısal değerlere çevir
+    # Map text labels to numerical values
     df['sentiment_num'] = df['sentiment'].map({'positive': 1, 'negative': 0})
     
-    # Veri boyutunu RTX 5060 8GB için sınırla
+    # Subsampling for local compute (Optimized for RTX 5060 8GB)
     df = df.sample(n=25000, random_state=42).reset_index(drop=True)
     
-    print(f"📊 Kullanılan veri boyutu: {len(df)}")
-    print(f"📊 Positive: {len(df[df['sentiment'] == 'positive'])}")
-    print(f"📊 Negative: {len(df[df['sentiment'] == 'negative'])}")
+    print(f"📊 Training Subset Size: {len(df)}")
+    print(f"📊 Positive Samples: {len(df[df['sentiment'] == 'positive'])}")
+    print(f"📊 Negative Samples: {len(df[df['sentiment'] == 'negative'])}")
     
     return df
 
 def create_data_loaders(df, tokenizer, batch_size=16, max_length=256):
-    """Veri yükleyicilerini oluştur"""
+    """Initialize PyTorch DataLoaders"""
     
-    # Train-test split
+    # Stratified Train-test split
     X_train, X_test, y_train, y_test = train_test_split(
         df['review'].values,
         df['sentiment_num'].values,
@@ -119,50 +118,50 @@ def create_data_loaders(df, tokenizer, batch_size=16, max_length=256):
         stratify=df['sentiment_num'].values
     )
     
-    # Datasets
+    # Create Dataset objects
     train_dataset = SentimentDataset(X_train, y_train, tokenizer, max_length)
     test_dataset = SentimentDataset(X_test, y_test, tokenizer, max_length)
     
-    # Data loaders
+    # Data loaders (Batch size of 16 is optimal for 8GB VRAM)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     
     return train_loader, test_loader
 
 def train_model():
-    """Modeli eğit"""
+    """Execute BERT fine-tuning"""
     
-    # Device setup
+    # Device configuration
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"🚀 Device: {device}")
+    print(f"🚀 Compute Device: {device}")
     
     if torch.cuda.is_available():
-        print(f"💾 GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+        print(f"💾 GPU VRAM: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
     
-    # Load data
+    # Load dataset
     df = load_and_prepare_data()
     
-    # Tokenizer
-    model_name = 'distilbert-base-uncased'  # Daha hafif model RTX 5060 için
+    # Initialize Tokenizer (DistilBERT is a lightweight transformer)
+    model_name = 'distilbert-base-uncased'
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=False)
     except:
-        print("⚠️ Tokenizer indirilemedi, yerel tokenizer kullanılıyor...")
+        print("⚠️ Tokenizer download failed, checking local directory...")
         from transformers import DistilBertTokenizer
         tokenizer = DistilBertTokenizer.from_pretrained(model_name, local_files_only=True)
     
-    # Data loaders
+    # Prepare data loaders
     train_loader, test_loader = create_data_loaders(
-        df, tokenizer, batch_size=16, max_length=256  # RTX 5060 8GB için optimize
+        df, tokenizer, batch_size=16, max_length=256
     )
     
-    # Model
+    # Initialize Neural Engine
     model = BERTSentimentClassifier(model_name=model_name).to(device)
     
-    # Optimizer and scheduler
+    # Optimizer and Scheduler (Standard for Transformers)
     optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01)
     
-    num_epochs = 3  # BERT için az epoch yeterli
+    num_epochs = 3 # BERT converges much faster than LSTMs
     total_steps = len(train_loader) * num_epochs
     scheduler = get_linear_schedule_with_warmup(
         optimizer,
@@ -170,21 +169,17 @@ def train_model():
         num_training_steps=total_steps
     )
     
-    # Loss function
     criterion = nn.CrossEntropyLoss()
     
-    # Training
     train_losses = []
     train_accuracies = []
     
-    print(f"\n🎯 Eğitim başlıyor - {num_epochs} epoch")
+    print(f"\n🎯 Training Started - Running {num_epochs} Epochs")
     print("=" * 60)
     
     for epoch in range(num_epochs):
         model.train()
-        total_loss = 0
-        correct_predictions = 0
-        total_predictions = 0
+        total_loss, correct_predictions, total_predictions = 0, 0, 0
         
         progress_bar = tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epochs}')
         
@@ -199,7 +194,7 @@ def train_model():
             loss = criterion(outputs, labels)
             
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0) # Gradient clipping
             optimizer.step()
             scheduler.step()
             
@@ -209,47 +204,40 @@ def train_model():
             correct_predictions += (predicted == labels).sum().item()
             total_predictions += labels.size(0)
             
-            # Update progress bar
+            # Real-time progress update
             progress_bar.set_postfix({
                 'Loss': f'{loss.item():.4f}',
                 'Acc': f'{correct_predictions/total_predictions:.4f}'
             })
         
-        # Epoch statistics
         avg_loss = total_loss / len(train_loader)
         accuracy = correct_predictions / total_predictions
         
         train_losses.append(avg_loss)
         train_accuracies.append(accuracy)
         
-        print(f'Epoch {epoch+1}/{num_epochs}:')
-        print(f'  Train Loss: {avg_loss:.4f}')
-        print(f'  Train Accuracy: {accuracy:.4f}')
+        print(f'Epoch {epoch+1} Summary:')
+        print(f'  Train Loss: {avg_loss:.4f} | Train Accuracy: {accuracy:.4f}')
         
-        # Validation
         val_accuracy = evaluate_model(model, test_loader, device)
-        print(f'  Val Accuracy: {val_accuracy:.4f}')
+        print(f'  Validation Accuracy: {val_accuracy:.4f}')
         print('-' * 40)
     
-    # Final evaluation
     final_accuracy = evaluate_model(model, test_loader, device)
-    print(f'\n🎉 Final Test Accuracy: {final_accuracy:.4f}')
+    print(f'\n🎉 Final Evaluation Accuracy: {final_accuracy:.4f}')
     
-    # Save model
+    # Persist artifacts
     torch.save(model.state_dict(), 'bert_sentiment_model.pth')
     tokenizer.save_pretrained('./bert_tokenizer')
-    print('✅ Model ve tokenizer kaydedildi!')
+    print('✅ Neural Engine and Tokenizer successfully serialized!')
     
-    # Plot training curves
     plot_training_curves(train_losses, train_accuracies)
-    
     return model, tokenizer
 
 def evaluate_model(model, test_loader, device):
-    """Modeli değerlendir"""
+    """Validation performance check"""
     model.eval()
-    correct_predictions = 0
-    total_predictions = 0
+    correct_predictions, total_predictions = 0, 0
     
     with torch.no_grad():
         for batch in test_loader:
@@ -263,34 +251,30 @@ def evaluate_model(model, test_loader, device):
             correct_predictions += (predicted == labels).sum().item()
             total_predictions += labels.size(0)
     
-    accuracy = correct_predictions / total_predictions
-    return accuracy
+    return correct_predictions / total_predictions
 
 def plot_training_curves(losses, accuracies):
-    """Eğitim eğrilerini çiz"""
+    """Generate and save performance visualizations"""
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
     
-    # Loss curve
     ax1.plot(losses)
-    ax1.set_title('Training Loss')
+    ax1.set_title('Training Loss Trend')
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Loss')
     ax1.grid(True)
     
-    # Accuracy curve
     ax2.plot(accuracies)
-    ax2.set_title('Training Accuracy')
+    ax2.set_title('Training Accuracy Trend')
     ax2.set_xlabel('Epoch')
     ax2.set_ylabel('Accuracy')
     ax2.grid(True)
     
     plt.tight_layout()
-    plt.savefig('bert_training_curves.png', dpi=300, bbox_inches='tight')
-    plt.show()
-    print('📊 Eğitim grafikleri kaydedildi: bert_training_curves.png')
+    plt.savefig('bert_training_curves.png', dpi=300)
+    print('📊 Performance curves exported: bert_training_curves.png')
 
 def predict_sentiment(text, model, tokenizer, device):
-    """Tek bir metin için sentiment tahmini yap"""
+    """Single sequence inference helper"""
     model.eval()
     
     encoding = tokenizer(
@@ -309,30 +293,29 @@ def predict_sentiment(text, model, tokenizer, device):
         _, predicted = torch.max(outputs, 1)
         probability = torch.softmax(outputs, dim=1)
     
-    sentiment = 'positive' if predicted.item() == 1 else 'negative'
+    sentiment = 'Positive' if predicted.item() == 1 else 'Negative'
     confidence = probability[0][predicted.item()].item()
     
     return sentiment, confidence
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🎯 BERT Sentiment Analysis Eğitimi")
+    print("🎭 Transformer-Based Sentiment Analysis (BERT)")
     print("=" * 60)
     
     model, tokenizer = train_model()
     
-    # Test predictions
-    print("\n🧪 Test tahminleri:")
+    print("\n🧪 Inference Test Phase:")
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    test_texts = [
+    test_cases = [
         "This movie is absolutely amazing! I loved every minute of it.",
         "Terrible movie, waste of time. Very disappointing.",
         "It was okay, nothing special but not bad either."
     ]
     
-    for text in test_texts:
+    for text in test_cases:
         sentiment, confidence = predict_sentiment(text, model, tokenizer, device)
-        print(f"Text: {text}")
-        print(f"Sentiment: {sentiment} (confidence: {confidence:.3f})")
+        print(f"Sample: {text}")
+        print(f"Result: {sentiment} ({confidence:.1%} confidence)")
         print("-" * 40)
