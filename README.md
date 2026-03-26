@@ -26,7 +26,7 @@ The dashboard provides real-time probability distributions for text sequences. B
 *Demonstrates robust detection of negative polarity in reviews with high emotional magnitude words like 'terrible' or 'disappointing'.*
 ## 🏗️ Technical Implementation
 ### Model Architecture
-    ```python 
+ ```python 
     LSTMSentimentClassifier(
     (embedding): Embedding(10000, 128)
     (lstm): LSTM(128, 128, bidirectional=True, dropout=0.3)
