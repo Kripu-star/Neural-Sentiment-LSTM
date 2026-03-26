@@ -46,7 +46,7 @@ To run this dashboard on your local machine, follow these steps:
    ```bash
    git clone [https://github.com/your-username/Neural-Sentiment-LSTM.git](https://github.com/your-username/Neural-Sentiment-LSTM.git)
    cd Neural-Sentiment-LSTM
- python -m venv venv
- source venv/bin/activate # On Windows use: .\venv\Scripts\activate
- pip install -r requirements.txt
- streamlit run app.py
+   python -m venv venv
+   source venv/bin/activate # On Windows use: .\venv\Scripts\activate
+   pip install -r requirements.txt
+   streamlit run app.py
