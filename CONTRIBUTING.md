@@ -16,12 +16,13 @@ Click the "Fork" button on the top-right of the GitHub page to create your own c
 Clone Locally
 
 Bash
-git clone https://github.com/YOUR_USERNAME/lstm-sentiment-analysis.git
+git remote add upstream https://github.com/YOUR_USERNAME/Neural-Sentiment-LSTM.git
+git clone 
 cd lstm-sentiment-analysis
 Add Upstream Remote
 
 Bash
-git remote add upstream https://github.com/ORIGINAL_OWNER/lstm-sentiment-analysis.git
+git remote add upstream https://github.com/Kripu-star/Neural-Sentiment-LSTM.git
 Create a Virtual Environment
 
 Bash
