@@ -57,11 +57,12 @@ LSTMSentimentClassifier(
 ## 📊 Performance Analysis & Inference
 The dashboard provides real-time probability distributions. Below are three distinct cases processed by the neural engine:
 
-#### Case 1: High-Confidence Positive Sentiment
-![Positive Case]()
+# Case 1: High-Confidence Positive Sentiment###
+![Positive Case](./assets/positive1.jpg) ![Positive Case](./assets/positive2.jpg)
 *The model extracts strong semantic features from high-value tokens, resulting in a confidence score **>90%**.*
 
 #### Case 2: Semantic Ambiguity & Decision Boundary
+![Boundary Case](./assets/mixed weightage.jpg)
 Input: "below average""This case demonstrates the engine's behavior at the mathematical decision boundary ($0.5$). While 'below average' carries a negative connotation, the token 'average' is high-frequency and context-dependent in the IMDB training set, often appearing in both neutral and positive comparative contexts. The resulting 50.31% vs 49.69% distribution indicates significant model uncertainty. This highlights the inherent limitation of binary classification when processing sequences that lack strong, polarized emotional features (e.g., 'horrible' or 'excellent')."
 
 
