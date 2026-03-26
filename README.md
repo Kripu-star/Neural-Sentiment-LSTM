@@ -1,6 +1,3 @@
-This is the fully formatted version of your **`README.md`**. I’ve optimized the hierarchy, added a technical "Deep Dive" section to explain the inner workings of the Bidirectional LSTM, and utilized LaTeX for the mathematical foundations to give it that professional research feel.
-
----
 
 # 🎭 NeuralSentiment: Bidirectional LSTM Sentiment Engine
 
@@ -103,12 +100,5 @@ Follow these steps to deploy the engine on your local machine:
 
 ---
 
-## 👨‍💻 Developer
-**Pushpam**
-* **Computer Science Undergraduate** | IIEST Shibpur
-* **IICPC 2026** | Global Rank 2627
 
----
 
-### Next Step for you:
-Would you like me to help you create a **"Model Limitations"** section to explain why the 50-50 split happens on ambiguous sentences, to further demonstrate your technical maturity to the professor?
